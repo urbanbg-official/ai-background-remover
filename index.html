@@ -8,8 +8,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; padding-bottom: 80px; }
     .container { width: 100%; max-width: 500px; background: #1e293b; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    h1 { color: #38bdf8; font-size: 24px; margin-bottom: 5px; }
-    p.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+    h1 { color: #38bdf8; font-size: 24px; margin-bottom: 5px; text-align: center; }
+    p.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; text-align: center; }
     .upload-box { border: 2px dashed #38bdf8; padding: 30px 15px; border-radius: 12px; background: #0f172a; cursor: pointer; text-align: center; }
     .upload-box:hover { border-color: #22c55e; }
     .upload-box input { display: none; }
@@ -20,9 +20,9 @@
     input[type="number"], select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; margin-top: 5px; }
     .btn-action { width: 100%; background: #22c55e; color: #0f172a; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 20px; }
     .btn-action:hover { background: #16a34a; color: #fff; }
-    .preview-box { margin-top: 20px; display: none; }
-    .preview-box img { max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid #334155; }
-    .info-text { font-size: 12px; color: #22c55e; margin-top: 8px; font-weight: bold; }
+    .preview-box { margin-top: 20px; display: none; text-align: center; }
+    .preview-box img { max-width: 100%; max-height: 250px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px; }
+    .info-text { font-size: 13px; color: #22c55e; margin-top: 8px; font-weight: bold; }
     .cross-promo { margin-top: 25px; padding: 12px; background: #0f172a; border-radius: 10px; border: 1px solid #334155; text-align: center; }
     .cross-promo p { font-size: 12px; color: #94a3b8; }
     .cross-promo a { display: inline-block; margin-top: 6px; color: #38bdf8; font-weight: bold; text-decoration: none; }
@@ -53,13 +53,13 @@
     <div class="upload-box" onclick="document.getElementById('imgInput').click()">
       <p style="color:#cbd5e1;">📁 Choose or Drop Image Here</p>
       <span class="upload-btn">Select Photo</span>
-      <input type="file" id="imgInput" accept="image/*">
+      <input type="file" id="imgInput" accept="image/*" onchange="handleImageUpload(event)">
     </div>
 
     <!-- Controls Section -->
     <div class="controls" id="controls">
       <label>Quality / Compression Level: <span id="qualityValue" style="color:#38bdf8;">80%</span></label>
-      <input type="range" id="qualityRange" min="10" max="100" value="80">
+      <input type="range" id="qualityRange" min="10" max="100" value="80" oninput="document.getElementById('qualityValue').innerText = this.value + '%'">
 
       <label>Max Width (Pixels):</label>
       <input type="number" id="widthInput" placeholder="Auto (Default)">
@@ -78,7 +78,7 @@
     <div class="preview-box" id="previewBox">
       <img id="outputImg" src="" alt="Compressed Result">
       <p class="info-text" id="sizeInfo"></p>
-      <button class="btn-action" style="background:#38bdf8;" onclick="downloadImage()">📥 Download HD Image</button>
+      <button class="btn-action" style="background:#38bdf8; color:#0f172a;" onclick="downloadImage()">📥 Download HD Image</button>
     </div>
 
     <!-- Cross Promotion -->
@@ -89,7 +89,77 @@
   </div>
 
   <script>
-    // आपका जावास्क्रिप्ट लॉजिक यहाँ रहेगा
+    let originalImage = new Image();
+    let originalFileSize = 0;
+    let originalFileName = "compressed_image";
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      originalFileSize = file.size;
+      originalFileName = file.name.substring(0, file.name.lastIndexOf('.')) || "compressed_image";
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        originalImage.src = e.target.result;
+        originalImage.onload = function() {
+          document.getElementById('controls').style.display = 'block';
+          document.getElementById('previewBox').style.display = 'none';
+          document.getElementById('widthInput').value = originalImage.width;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function compressImage() {
+      if (!originalImage.src) return;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      let width = parseInt(document.getElementById('widthInput').value) || originalImage.width;
+      let height = (originalImage.height / originalImage.width) * width;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.drawImage(originalImage, 0, 0, width, height);
+
+      const quality = parseFloat(document.getElementById('qualityRange').value) / 100;
+      const format = document.getElementById('formatSelect').value;
+
+      const compressedDataUrl = canvas.toDataURL(format, quality);
+
+      const outputImg = document.getElementById('outputImg');
+      outputImg.src = compressedDataUrl;
+
+      const head = 'data:' + format + ';base64,';
+      const sizeInBytes = Math.round((compressedDataUrl.length - head.length) * 3 / 4);
+
+      const origSizeKB = (originalFileSize / 1024).toFixed(1);
+      const compSizeKB = (sizeInBytes / 1024).toFixed(1);
+
+      document.getElementById('sizeInfo').innerHTML = `Original: ${origSizeKB} KB ➔ Reduced: <span style="color:#38bdf8;">${compSizeKB} KB</span>`;
+      document.getElementById('previewBox').style.display = 'block';
+    }
+
+    function downloadImage() {
+      const outputImg = document.getElementById('outputImg');
+      if (!outputImg.src) return;
+
+      const format = document.getElementById('formatSelect').value;
+      let ext = ".jpg";
+      if (format === "image/png") ext = ".png";
+      if (format === "image/webp") ext = ".webp";
+
+      const link = document.createElement('a');
+      link.href = outputImg.src;
+      link.download = originalFileName + "_compressed" + ext;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   </script>
 </body>
 </html>
