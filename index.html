@@ -3,76 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UrbanBG AI - Professional HD Remover</title>
-  <!-- AI Model Loading -->
+  <title>UrbanBG AI - Unlimited HD Remover</title>
+  <!-- Google's Official AI Library -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+  
   <style>
-    body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
-    .container { width: 100%; max-width: 500px; background: #1e293b; padding: 25px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    h1 { color: #22c55e; margin-bottom: 5px; }
-    .upload-btn { background: #22c55e; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; display: inline-block; margin-top: 15px; }
-    canvas { max-width: 100%; margin-top: 20px; border-radius: 10px; background: #0f172a; }
-    .download-btn { background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 10px; border: none; font-weight: bold; margin-top: 15px; cursor: pointer; width: 100%; }
+    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    .container { width: 100%; max-width: 450px; background: #1e293b; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+    h1 { color: #22c55e; margin-bottom: 10px; }
+    .upload-btn { background: #22c55e; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: block; margin-top: 20px; }
+    canvas { max-width: 100%; border-radius: 10px; margin-top: 20px; display: none; background: #000; }
+    .status { margin-top: 15px; color: #38bdf8; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <!-- Adsterra Banner -->
   <div style="text-align: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background: #1e293b; padding: 5px 0; border-top: 1px solid #334155;">
-    <script>
-      atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};
-    </script>
+    <script>atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};</script>
     <script src="https://www.highperformanceformat.com/f13146991eed004d9d88689beb216a77/invoke.js"></script>
   </div>
 
   <div class="container">
     <h1>UrbanBG AI</h1>
-    <p>Professional HD In-App Removal</p>
+    <p>Unlimited HD Removal</p>
     
     <label class="upload-btn" for="fileInput">Choose Image</label>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="runAI(event)">
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="processAI(event)">
     
-    <div id="status" style="margin-top:15px; color:#f43f5e;">Waiting for image...</div>
-    <canvas id="output"></canvas>
-    <button class="download-btn" id="dlBtn" style="display:none;" onclick="downloadHD()">📥 Download HD Image</button>
+    <div id="status" class="status">Waiting for image...</div>
+    <canvas id="canvas"></canvas>
+    <button id="dlBtn" onclick="downloadImg()" style="display:none; background:#38bdf8; border:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold;">📥 Download Transparent PNG</button>
   </div>
 
   <script>
-    async function runAI(event) {
+    async function processAI(event) {
+      const file = event.target.files[0];
       const status = document.getElementById('status');
-      const canvas = document.getElementById('output');
+      const canvas = document.getElementById('canvas');
       const dlBtn = document.getElementById('dlBtn');
+      
+      status.innerText = "Loading AI... (Wait 5 sec)...";
+      
       const img = new Image();
-      img.src = URL.createObjectURL(event.target.files[0]);
-      
-      status.innerText = "Loading AI & Processing (This takes 5-10 seconds)...";
-      
+      img.src = URL.createObjectURL(file);
+      await img.decode();
+
       const net = await bodyPix.load();
       const segmentation = await net.segmentPerson(img);
       
-      const ctx = canvas.getContext('2d');
       canvas.width = img.width;
       canvas.height = img.height;
-      
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
+      
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pixel = imageData.data;
+      const data = imageData.data;
       
       for (let i = 0; i < segmentation.data.length; i++) {
         if (segmentation.data[i] === 0) {
-          pixel[i * 4 + 3] = 0; // Remove BG
+          data[i * 4 + 3] = 0; // Transperancy logic
         }
       }
       ctx.putImageData(imageData, 0, 0);
-      status.innerText = "Done! HD Background Removed.";
+      
+      canvas.style.display = 'block';
       dlBtn.style.display = 'block';
+      status.innerText = "Success! Background Removed.";
     }
 
-    function downloadHD() {
+    function downloadImg() {
       const link = document.createElement('a');
-      link.download = 'UrbanBG_HD_Result.png';
-      link.href = document.getElementById('output').toDataURL('image/png');
+      link.download = 'UrbanBG_Transparent.png';
+      link.href = document.getElementById('canvas').toDataURL('image/png');
       link.click();
     }
   </script>
