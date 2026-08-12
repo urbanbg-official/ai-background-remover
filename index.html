@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UrbanBG AI - Superfast HD Background Remover</title>
+  <title>UrbanBG AI - Unlimited HD Remover</title>
   
   <style>
     body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; margin: 0; padding-bottom: 80px; }
@@ -19,7 +19,7 @@
 
   <div class="container">
     <h1>UrbanBG AI</h1>
-    <p style="color: #94a3b8; font-size: 14px;">Fast & Unlimited HD Removal</p>
+    <p style="color: #94a3b8; font-size: 14px;">Unlimited Ultra-Fast HD Background Removal</p>
     
     <label class="upload-btn" for="fileInput">📁 Choose Image</label>
     <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="processAI(event)">
@@ -29,19 +29,15 @@
     <a id="dlBtn" style="display:none; background:#38bdf8; color:#0f172a; text-decoration:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold; box-sizing:border-box; display:block;">📥 Download Transparent PNG</a>
   </div>
 
-  <!-- Adsterra Banner Ads (Intact & Safe) -->
+  <!-- Adsterra Banner Ads (Intact & Untouched) -->
   <div style="text-align: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background: #1e293b; padding: 5px 0; border-top: 1px solid #334155;">
     <script>atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};</script>
     <script src="https://www.highperformanceformat.com/f13146991eed004d9d88689beb216a77/invoke.js"></script>
   </div>
 
-  <script type="module">
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.14.0';
-
-    // Disable local model search to force fast CDN loading
-    env.allowLocalModels = false;
-
-    let segmenter = null;
+  <script>
+    // तेरा बनाया हुआ लाइव सर्वर URL
+    const API_URL = "https://urbanbg-backend.onrender.com/remove-bg";
 
     async function processAI(event) {
       const file = event.target.files[0];
@@ -51,74 +47,39 @@
       const resultImg = document.getElementById('resultImg');
       const dlBtn = document.getElementById('dlBtn');
 
+      status.innerText = "⚡ Processing HD Cutout... (2-3 sec)";
       resultImg.style.display = 'none';
       dlBtn.style.display = 'none';
 
+      const formData = new FormData();
+      formData.append("image", file);
+
       try {
-        if (!segmenter) {
-          status.innerText = "⏳ Loading AI Engine (Only 1st time ~5 sec)...";
-          // Light & Fast RMBG Model (Rembg / BRIA AI Engine)
-          segmenter = await pipeline('image-segmentation', 'Xenova/briaai-rmbg-1.4');
+        const response = await fetch(API_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error("Server response error");
         }
 
-        status.innerText = "⚡ Removing background...";
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
 
-        const imgUrl = URL.createObjectURL(file);
-        const output = await segmenter(imgUrl);
+        resultImg.src = url;
+        resultImg.style.display = 'block';
 
-        // Convert Output Mask to Clean Transparent Image
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        dlBtn.href = url;
+        dlBtn.download = 'UrbanBG_Clean.png';
+        dlBtn.style.display = 'block';
 
-        const originalImg = new Image();
-        originalImg.src = imgUrl;
-
-        await new Promise(res => originalImg.onload = res);
-
-        canvas.width = originalImg.width;
-        canvas.height = originalImg.height;
-
-        // Draw original
-        ctx.drawImage(originalImg, 0, 0);
-
-        // Extract image data
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = output[0].mask.width;
-        maskCanvas.height = output[0].mask.height;
-        const maskCtx = maskCanvas.getContext('2d');
-
-        const maskImgData = maskCtx.createImageData(maskCanvas.width, maskCanvas.height);
-        for (let i = 0; i < output[0].mask.data.length; i++) {
-          const val = output[0].mask.data[i];
-          maskImgData.data[i * 4 + 3] = val; // Alpha channel
-        }
-        maskCtx.putImageData(maskImgData, 0, 0);
-
-        // Smooth Resize Mask to Original HD Size
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob((blob) => {
-          const cleanUrl = URL.createObjectURL(blob);
-          resultImg.src = cleanUrl;
-          resultImg.style.display = 'block';
-
-          dlBtn.href = cleanUrl;
-          dlBtn.download = 'UrbanBG_Transparent.png';
-          dlBtn.style.display = 'block';
-
-          status.innerText = "✅ Success! Smooth HD Background Removed.";
-        }, 'image/png');
-
+        status.innerText = "✅ Done! Smooth HD Quality.";
       } catch (err) {
         console.error(err);
-        status.innerText = "❌ Error processing. Please try again.";
+        status.innerText = "⏳ Server waking up! Please try again in 10 seconds...";
       }
     }
-
-    // Attach to window so HTML input can access it
-    window.processAI = processAI;
   </script>
 </body>
 </html>
