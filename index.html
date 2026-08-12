@@ -29,14 +29,13 @@
     <a id="dlBtn" style="display:none; background:#38bdf8; color:#0f172a; text-decoration:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold; box-sizing:border-box; display:block;">📥 Download Transparent PNG</a>
   </div>
 
-  <!-- Adsterra Banner Ads (Intact & Untouched) -->
+  <!-- Adsterra Banner Ads -->
   <div style="text-align: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background: #1e293b; padding: 5px 0; border-top: 1px solid #334155;">
     <script>atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};</script>
     <script src="https://www.highperformanceformat.com/f13146991eed004d9d88689beb216a77/invoke.js"></script>
   </div>
 
   <script>
-    // तेरा बनाया हुआ लाइव सर्वर URL
     const API_URL = "https://urbanbg-backend.onrender.com/remove-bg";
 
     async function processAI(event) {
@@ -61,7 +60,7 @@
         });
 
         if (!response.ok) {
-          throw new Error("Server response error");
+          throw new Error("Server Response Status: " + response.status);
         }
 
         const blob = await response.blob();
@@ -77,7 +76,8 @@
         status.innerText = "✅ Done! Smooth HD Quality.";
       } catch (err) {
         console.error(err);
-        status.innerText = "⏳ Server waking up! Please try again in 10 seconds...";
+        alert("Alert Error Details: " + err.message); 
+        status.innerText = "❌ Error: " + err.message;
       }
     }
   </script>
