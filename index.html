@@ -84,19 +84,17 @@
           // Draw image to canvas
           ctx.drawImage(img, 0, 0);
 
-          // Algorithm to detect and remove light/background colors locally
+          // Local Background Removal Algorithm
           const imgData = ctx.getImageData(0, 0, finalCanvas.width, finalCanvas.height);
           const data = imgData.data;
 
-          // Get corner color as reference background color
           const r0 = data[0], g0 = data[1], b0 = data[2];
 
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i], g = data[i+1], b = data[i+2];
-            // Color distance check
             const diff = Math.abs(r - r0) + Math.abs(g - g0) + Math.abs(b - b0);
             if (diff < 90) {
-              data[i + 3] = 0; // Set Alpha to 0 (Transparent)
+              data[i + 3] = 0; // Transparent
             }
           }
 
