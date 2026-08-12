@@ -3,77 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UrbanBG AI - Unlimited HD Remover</title>
-  
+  <title>UrbanBG AI</title>
   <style>
-    body { background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; margin: 0; padding-bottom: 80px; }
-    .container { width: 100%; max-width: 450px; background: #1e293b; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; box-sizing: border-box; }
-    h1 { color: #22c55e; margin-bottom: 5px; }
-    .upload-btn { background: #22c55e; color: #0f172a; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; display: block; margin-top: 20px; transition: 0.3s; }
-    .upload-btn:hover { background: #16a34a; }
-    #resultImg { max-width: 100%; border-radius: 10px; margin-top: 20px; display: none; background: url('data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAwAAAAMCAIAAADfeC0HAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABwSURBVH3BAMBAC03a/xU2h0I4J8yAMf/R1mEDAE2AAnm1k+8AAAAASUVORK5CYII='); }
-    .status { margin-top: 15px; color: #38bdf8; font-weight: bold; word-break: break-word; }
+    body { background: #0f172a; color: white; text-align: center; font-family: sans-serif; padding: 20px; }
+    .container { max-width: 400px; margin: auto; background: #1e293b; padding: 20px; border-radius: 15px; }
+    .upload-btn { background: #22c55e; padding: 15px; display: block; border-radius: 10px; cursor: pointer; font-weight: bold; }
   </style>
-
-  <!-- Client-side Fast AI Background Removal Engine -->
-  <script type="module">
-    import { imglyRemoveBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm';
-    window.removeBG = imglyRemoveBackground;
-  </script>
 </head>
 <body>
-
   <div class="container">
     <h1>UrbanBG AI</h1>
-    <p style="color: #94a3b8; font-size: 14px;">Unlimited Ultra-Fast HD Background Removal</p>
-    
     <label class="upload-btn" for="fileInput">📁 Choose Image</label>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="processAI(event)">
-    
-    <div id="status" class="status">Waiting for image...</div>
-    <img id="resultImg" alt="Result Image">
-    <a id="dlBtn" style="display:none; background:#38bdf8; color:#0f172a; text-decoration:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold; box-sizing:border-box;">📥 Download Transparent PNG</a>
-  </div>
-
-  <!-- Adsterra Banner Ads -->
-  <div style="text-align: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background: #1e293b; padding: 5px 0; border-top: 1px solid #334155;">
-    <script>atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};</script>
-    <script src="https://www.highperformanceformat.com/f13146991eed004d9d88689beb216a77/invoke.js"></script>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="uploadImage(event)">
+    <div id="status">Waiting for image...</div>
+    <img id="resultImg" style="max-width:100%; display:none; margin-top:15px;">
   </div>
 
   <script>
-    async function processAI(event) {
+    async function uploadImage(event) {
       const file = event.target.files[0];
-      if (!file) return;
-
       const status = document.getElementById('status');
       const resultImg = document.getElementById('resultImg');
-      const dlBtn = document.getElementById('dlBtn');
-
-      status.innerText = "⚡ Processing HD Cutout locally...";
-      resultImg.style.display = 'none';
-      dlBtn.style.display = 'none';
+      
+      status.innerText = "⚡ Processing...";
+      const formData = new FormData();
+      formData.append("image", file);
 
       try {
-        if (!window.removeBG) {
-          status.innerText = "⏳ Loading AI Engine, please try in 3 seconds...";
-          return;
-        }
+        const response = await fetch("https://urbanbg-backend.onrender.com/remove-bg", {
+          method: "POST",
+          body: formData
+        });
 
-        const blob = await window.removeBG(file);
-        const url = URL.createObjectURL(blob);
+        if (!response.ok) throw new Error("Server is waking up...");
 
-        resultImg.src = url;
+        const blob = await response.blob();
+        resultImg.src = URL.createObjectURL(blob);
         resultImg.style.display = 'block';
-
-        dlBtn.href = url;
-        dlBtn.download = 'UrbanBG_Clean.png';
-        dlBtn.style.display = 'block';
-
-        status.innerText = "✅ Done! Smooth HD Quality.";
+        status.innerText = "✅ Done!";
       } catch (err) {
-        console.error(err);
-        status.innerText = "❌ Error processing image. Try another photo.";
+        status.innerText = "❌ Retrying... please wait.";
+        setTimeout(() => location.reload(), 3000); // एरर आने पर ऑटो-रिलोड करेगा
       }
     }
   </script>
