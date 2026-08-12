@@ -14,6 +14,12 @@
     #resultImg { max-width: 100%; border-radius: 10px; margin-top: 20px; display: none; background: url('data:image/png;base64,iVBORw0KGgoAAAANSU5EUgAAAAwAAAAMCAIAAADfeC0HAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABwSURBVH3BAMBAC03a/xU2h0I4J8yAMf/R1mEDAE2AAnm1k+8AAAAASUVORK5CYII='); }
     .status { margin-top: 15px; color: #38bdf8; font-weight: bold; word-break: break-word; }
   </style>
+
+  <!-- Client-side Fast AI Background Removal Engine -->
+  <script type="module">
+    import { imglyRemoveBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm';
+    window.removeBG = imglyRemoveBackground;
+  </script>
 </head>
 <body>
 
@@ -26,7 +32,7 @@
     
     <div id="status" class="status">Waiting for image...</div>
     <img id="resultImg" alt="Result Image">
-    <a id="dlBtn" style="display:none; background:#38bdf8; color:#0f172a; text-decoration:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold; box-sizing:border-box; display:block;">📥 Download Transparent PNG</a>
+    <a id="dlBtn" style="display:none; background:#38bdf8; color:#0f172a; text-decoration:none; padding:15px; width:100%; border-radius:10px; margin-top:15px; font-weight:bold; box-sizing:border-box;">📥 Download Transparent PNG</a>
   </div>
 
   <!-- Adsterra Banner Ads -->
@@ -36,8 +42,6 @@
   </div>
 
   <script>
-    const API_URL = "https://urbanbg-backend.onrender.com/remove-bg";
-
     async function processAI(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -46,24 +50,17 @@
       const resultImg = document.getElementById('resultImg');
       const dlBtn = document.getElementById('dlBtn');
 
-      status.innerText = "⚡ Processing HD Cutout... (2-3 sec)";
+      status.innerText = "⚡ Processing HD Cutout locally...";
       resultImg.style.display = 'none';
       dlBtn.style.display = 'none';
 
-      const formData = new FormData();
-      formData.append("image", file);
-
       try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          body: formData
-        });
-
-        if (!response.ok) {
-          throw new Error("Server Response Status: " + response.status);
+        if (!window.removeBG) {
+          status.innerText = "⏳ Loading AI Engine, please try in 3 seconds...";
+          return;
         }
 
-        const blob = await response.blob();
+        const blob = await window.removeBG(file);
         const url = URL.createObjectURL(blob);
 
         resultImg.src = url;
@@ -76,8 +73,7 @@
         status.innerText = "✅ Done! Smooth HD Quality.";
       } catch (err) {
         console.error(err);
-        alert("Alert Error Details: " + err.message); 
-        status.innerText = "❌ Error: " + err.message;
+        status.innerText = "❌ Error processing image. Try another photo.";
       }
     }
   </script>
