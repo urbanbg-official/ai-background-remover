@@ -4,70 +4,118 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UrbanBG AI - HD Background Remover</title>
-  <!-- लाइब्रेरी जो ब्राउज़र के अंदर ही बैकग्राउंड हटाएगी -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
-  
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
-    .container { width: 100%; max-width: 450px; background: #1e293b; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-    h1 { color: #22c55e; font-size: 26px; margin-bottom: 10px; }
-    .upload-section { border: 2px dashed #22c55e; padding: 30px; border-radius: 15px; cursor: pointer; background: #0f172a; margin-top: 20px; }
-    .btn { background: #22c55e; border: none; color: white; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; width: 100%; font-size: 16px; }
-    #canvas { display: none; }
-    #resultImg { margin-top: 20px; max-width: 100%; border-radius: 10px; border: 2px solid #22c55e; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; padding-bottom: 80px; }
+    .container { width: 100%; max-width: 500px; background: #1e293b; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; }
+    h1 { color: #22c55e; font-size: 24px; margin-bottom: 5px; }
+    p.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+    .upload-box { border: 2px dashed #22c55e; padding: 30px 15px; border-radius: 12px; background: #0f172a; cursor: pointer; }
+    .upload-box input { display: none; }
+    .upload-btn { background: #22c55e; color: #0f172a; padding: 10px 20px; border-radius: 8px; font-weight: bold; margin-top: 10px; display: inline-block; }
+    .preview-box { margin-top: 20px; display: none; }
+    .preview-box canvas { max-width: 100%; max-height: 280px; border-radius: 8px; border: 1px solid #334155; background: repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 50% / 16px 16px; }
+    .btn-action { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 15px; }
+    .btn-action:hover { background: #0284c7; color: #fff; }
+    #statusText { margin-top: 15px; font-size: 14px; color: #38bdf8; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- Adsterra Ad -->
+  <!-- Adsterra Banner Ad (320x50) -->
   <div style="text-align: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 9999; background: #1e293b; padding: 5px 0; border-top: 1px solid #334155;">
     <script>
-      atOptions = {'key':'f13146991eed004d9d88689beb216a77','format':'iframe','height':50,'width':320,'params':{}};
+      atOptions = {
+        'key' : 'f13146991eed004d9d88689beb216a77',
+        'format' : 'iframe',
+        'height' : 50,
+        'width' : 320,
+        'params' : {}
+      };
     </script>
     <script src="https://www.highperformanceformat.com/f13146991eed004d9d88689beb216a77/invoke.js"></script>
   </div>
 
   <div class="container">
     <h1>UrbanBG AI</h1>
-    <p>In-App HD Background Removal</p>
+    <p class="subtitle">100% Free Automatic In-App Background Remover</p>
 
-    <div class="upload-section" onclick="document.getElementById('fileInput').click()">
-      <p>📁 Upload Image (Process In-App)</p>
-      <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleImage(event)">
+    <!-- Upload Box -->
+    <div class="upload-box" onclick="document.getElementById('bgInput').click()">
+      <p style="color:#cbd5e1;">✂️ Choose Image to Remove Background</p>
+      <span class="upload-btn">Select Photo</span>
+      <input type="file" id="bgInput" accept="image/*" onchange="processBackground(event)">
     </div>
 
-    <button class="btn" onclick="processImage()">Remove Background</button>
-    <div id="status" style="margin-top:15px; color:#38bdf8;"></div>
-    <img id="resultImg" src="" alt="Result" style="display:none;">
+    <p id="statusText" style="display:none;"></p>
+
+    <!-- Result Canvas & Download -->
+    <div class="preview-box" id="resultArea">
+      <p style="color:#22c55e; margin-bottom:10px; font-weight:bold;">Preview (Transparent Background):</p>
+      <canvas id="canvasArea"></canvas>
+      <button class="btn-action" onclick="downloadPNG()">📥 Download HD Transparent PNG</button>
+    </div>
   </div>
 
   <script>
-    async function processImage() {
-      const status = document.getElementById('status');
-      const img = document.getElementById('resultImg');
+    let finalCanvas = document.getElementById('canvasArea');
+
+    function processBackground(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const status = document.getElementById('statusText');
+      const resultArea = document.getElementById('resultArea');
       
-      status.innerText = "Processing AI Model (Please wait)...";
-      
-      // AI model logic inside browser
-      const net = await bodyPix.load();
-      const segmentation = await net.segmentPerson(img);
-      
-      // Applying transparency mask
-      status.innerText = "Background Removed! (HD Ready)";
-      // Note: Full AI transparency masking is complex, this triggers the processing
-      alert("AI Processing complete! Photo is ready for download.");
+      status.style.display = 'block';
+      status.innerText = "Processing image background... Please wait...";
+      resultArea.style.display = 'none';
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = e.target.result;
+        img.onload = function() {
+          const ctx = finalCanvas.getContext('2d');
+          finalCanvas.width = img.width;
+          finalCanvas.height = img.height;
+
+          // Draw image to canvas
+          ctx.drawImage(img, 0, 0);
+
+          // Algorithm to detect and remove light/background colors locally
+          const imgData = ctx.getImageData(0, 0, finalCanvas.width, finalCanvas.height);
+          const data = imgData.data;
+
+          // Get corner color as reference background color
+          const r0 = data[0], g0 = data[1], b0 = data[2];
+
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i+1], b = data[i+2];
+            // Color distance check
+            const diff = Math.abs(r - r0) + Math.abs(g - g0) + Math.abs(b - b0);
+            if (diff < 90) {
+              data[i + 3] = 0; // Set Alpha to 0 (Transparent)
+            }
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+
+          status.innerText = "✅ Background Removed Successfully!";
+          resultArea.style.display = 'block';
+        };
+      };
+      reader.readAsDataURL(file);
     }
 
-    function handleImage(event) {
-      const reader = new FileReader();
-      reader.onload = function(){
-        const img = document.getElementById('resultImg');
-        img.src = reader.result;
-        img.style.display = 'block';
-      }
-      reader.readAsDataURL(event.target.files[0]);
+    function downloadPNG() {
+      const link = document.createElement('a');
+      link.download = 'UrbanBG_Transparent.png';
+      link.href = finalCanvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
